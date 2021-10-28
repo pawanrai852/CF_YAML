@@ -1,0 +1,446 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        
+        {
+            "Action": "ec2:*",
+            "Effect": "Allow",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "elasticloadbalancing:*",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "cloudwatch:*",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "autoscaling:*",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "iam:*",
+                "organizations:DescribeAccount",
+                "organizations:DescribeOrganization",
+                "organizations:DescribeOrganizationalUnit",
+                "organizations:DescribePolicy",
+                "organizations:ListChildren",
+                "organizations:ListParents",
+                "organizations:ListPoliciesForTarget",
+                "organizations:ListRoots",
+                "organizations:ListPolicies",
+                "organizations:ListTargetsForPolicy"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "iam:CreateServiceLinkedRole",
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "iam:AWSServiceName": [
+                        "autoscaling.amazonaws.com",
+                        "ec2scheduled.amazonaws.com",
+                        "elasticloadbalancing.amazonaws.com",
+                        "spot.amazonaws.com",
+                        "spotfleet.amazonaws.com",
+                        "transitgateway.amazonaws.com"
+                    ]
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "events:PutTargets",
+                "events:RemoveTargets",
+                "events:PutRule",
+                "events:DeleteRule",
+                "events:DescribeRule"
+            ],
+            "Resource": [
+                "arn:aws:events:*:*:rule/awscodestar-*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "cloudformation:*Stack*",
+                "cloudformation:CreateChangeSet",
+                "cloudformation:ExecuteChangeSet",
+                "cloudformation:DeleteChangeSet",
+                "cloudformation:GetTemplate"
+            ],
+            "Resource": [
+                "arn:aws:cloudformation:*:*:stack/awscodestar-*",
+                "arn:aws:cloudformation:*:*:stack/awseb-*",
+                "arn:aws:cloudformation:*:*:stack/aws-cloud9-*",
+                "arn:aws:cloudformation:*:aws:transform/CodeStar*"
+            ]
+        },
+        { 
+            "Effect": "Allow",
+            "Action": [
+                "cloudformation:GetTemplateSummary",
+                "cloudformation:DescribeChangeSet"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::awscodestar-*/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::aws-codestar-*",
+                "arn:aws:s3:::elasticbeanstalk-*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "codestar:*",
+                "codecommit:*",
+                "codepipeline:*",
+                "codedeploy:*",
+                "codebuild:*",
+                "autoscaling:*",
+                "cloudwatch:Put*",
+                "ec2:*",
+                "elasticbeanstalk:*",
+                "elasticloadbalancing:*",
+                "iam:ListRoles",
+                "logs:*",
+                "sns:*",
+                "cloud9:CreateEnvironmentEC2",
+                "cloud9:DeleteEnvironment",
+                "cloud9:DescribeEnvironment*",
+                "cloud9:ListEnvironments"
+            ],
+            "Resource": "*"
+        },
+        { 
+            "Effect": "Allow",
+            "Action": [
+                "iam:AttachRolePolicy",
+                "iam:CreateRole",
+                "iam:DeleteRole",
+                "iam:DeleteRolePolicy",
+                "iam:DetachRolePolicy",
+                "iam:GetRole",
+                "iam:PassRole",
+                "iam:GetRolePolicy",
+                "iam:PutRolePolicy",
+                "iam:SetDefaultPolicyVersion",
+                "iam:CreatePolicy",
+                "iam:DeletePolicy",
+                "iam:AddRoleToInstanceProfile",
+                "iam:CreateInstanceProfile",
+                "iam:DeleteInstanceProfile",
+                "iam:RemoveRoleFromInstanceProfile"
+            ],
+            "Resource": [
+                "arn:aws:iam::*:role/CodeStarWorker*",
+                "arn:aws:iam::*:policy/CodeStarWorker*",
+                "arn:aws:iam::*:instance-profile/awscodestar-*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "iam:AttachUserPolicy",
+                "iam:DetachUserPolicy"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "ArnEquals": {
+                    "iam:PolicyArn": [
+                        "arn:aws:iam::*:policy/CodeStar_*"
+                    ]
+                }
+            }
+        },
+        { 
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreatePolicy",
+                "iam:DeletePolicy",
+                "iam:CreatePolicyVersion",
+                "iam:DeletePolicyVersion",
+                "iam:ListEntitiesForPolicy",
+                "iam:ListPolicyVersions",
+                "iam:GetPolicy",
+                "iam:GetPolicyVersion"
+            ],
+            "Resource": [
+                "arn:aws:iam::*:policy/CodeStar_*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "iam:ListAttachedRolePolicies"
+            ],
+            "Resource": [
+                "arn:aws:iam::*:role/aws-codestar-service-role",
+                "arn:aws:iam::*:role/service-role/aws-codestar-service-role"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateServiceLinkedRole"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "iam:AWSServiceName": "cloud9.amazonaws.com"
+                }
+            }
+        },
+        { 
+            "Effect": "Allow",
+            "Action": [
+                "config:DescribeConfigRules"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "codestar-connections:UseConnection",
+                "codestar-connections:GetConnection"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "codestar-connections:PassConnection",
+            "Resource": "*",
+            "Condition": {
+                "StringEqualsIfExists": {
+                    "codestar-connections:PassedToService": "codepipeline.amazonaws.com"
+                }
+            }
+        },
+        {
+            "Action": "codedeploy:*",
+            "Effect": "Allow",
+            "Resource": "*"
+        },
+        {
+            
+            "Effect": "Allow",
+            "Action": [
+                "codestar-notifications:CreateNotificationRule",
+                "codestar-notifications:DescribeNotificationRule",
+                "codestar-notifications:UpdateNotificationRule",
+                "codestar-notifications:DeleteNotificationRule",
+                "codestar-notifications:Subscribe",
+                "codestar-notifications:Unsubscribe"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringLike": {
+                    "codestar-notifications:NotificationsForResource": "arn:aws:codedeploy:*"
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "codestar-notifications:ListNotificationRules",
+                "codestar-notifications:ListTargets",
+                "codestar-notifications:ListTagsforResource",
+                "codestar-notifications:ListEventTypes"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sns:ListTopics"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Action": [
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:GetBucketPolicy",
+                "s3:GetBucketVersioning",
+                "s3:GetObjectVersion",
+                "s3:CreateBucket",
+                "s3:PutBucketPolicy"
+            ],
+            "Effect": "Allow",
+            "Resource": "arn:aws:s3::*:codepipeline-*"
+        },
+        {
+            "Action": [
+                "events:PutRule",
+                "events:PutTargets",
+                "events:DeleteRule",
+                "events:DisableRule",
+                "events:RemoveTargets"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:events:*:*:rule/codepipeline-*"
+            ]
+        },
+        { 
+            "Effect": "Allow",
+            "Action": [
+                "codestar-notifications:CreateNotificationRule",
+                "codestar-notifications:DescribeNotificationRule",
+                "codestar-notifications:UpdateNotificationRule",
+                "codestar-notifications:DeleteNotificationRule",
+                "codestar-notifications:Subscribe",
+                "codestar-notifications:Unsubscribe"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringLike": {
+                    "codestar-notifications:NotificationsForResource": "arn:aws:codepipeline:*"
+                }
+            }
+        },
+        {
+            
+            "Effect": "Allow",
+            "Action": [
+                "chatbot:DescribeSlackChannelConfigurations"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Action": [
+                "codepipeline:*",
+                "cloudformation:DescribeStacks",
+                "cloudformation:ListChangeSets",
+                "cloudtrail:DescribeTrails",
+                "codebuild:BatchGetProjects",
+                "codebuild:CreateProject",
+                "codebuild:ListCuratedEnvironmentImages",
+                "codebuild:ListProjects",
+                "codecommit:ListBranches",
+                "codecommit:GetReferences",
+                "codecommit:ListRepositories",
+                "codedeploy:BatchGetDeploymentGroups",
+                "codedeploy:ListApplications",
+                "codedeploy:ListDeploymentGroups",
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeSubnets",
+                "ec2:DescribeVpcs",
+                "ecr:DescribeRepositories",
+                "ecr:ListImages",
+                "ecs:ListClusters",
+                "ecs:ListServices",
+                "elasticbeanstalk:DescribeApplications",
+                "elasticbeanstalk:DescribeEnvironments",
+                "iam:ListRoles",
+                "iam:GetRole",
+                "lambda:ListFunctions",
+                "events:ListRules",
+                "events:ListTargetsByRule",
+                "events:DescribeRule",
+                "opsworks:DescribeApps",
+                "opsworks:DescribeLayers",
+                "opsworks:DescribeStacks",
+                "s3:ListAllMyBuckets",
+                "sns:ListTopics",
+                "codestar-notifications:ListNotificationRules",
+                "codestar-notifications:ListTargets",
+                "codestar-notifications:ListTagsforResource",
+                "codestar-notifications:ListEventTypes",
+                "states:ListStateMachines"
+            ],
+            "Effect": "Allow",
+            "Resource": "*"
+        },
+        {
+            "Action": [
+                "cloudtrail:PutEventSelectors",
+                "cloudtrail:CreateTrail",
+                "cloudtrail:GetEventSelectors",
+                "cloudtrail:StartLogging"
+            ],
+            "Effect": "Allow",
+            "Resource": "arn:aws:cloudtrail:*:*:trail/codepipeline-source-trail"
+        },
+        {
+            "Action": [
+                "iam:PassRole"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:iam::*:role/service-role/cwe-role-*"
+            ],
+            "Condition": {
+                "StringEquals": {
+                    "iam:PassedToService": [
+                        "events.amazonaws.com"
+                    ]
+                }
+            }
+        },
+        {
+            "Action": [
+                "iam:PassRole"
+            ],
+            "Effect": "Allow",
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "iam:PassedToService": [
+                        "codepipeline.amazonaws.com"
+                    ]
+                }
+            }
+        },
+        { 
+            "Effect": "Allow",
+            "Action": [
+                "sns:CreateTopic",
+                "sns:SetTopicAttributes"
+            ],
+            "Resource": "arn:aws:sns:*:*:codestar-notifications*"
+        },
+        { 
+            "Effect": "Allow",
+            "Action": "codestar-connections:*",
+            "Resource": "*"
+        },
+        { 
+            "Effect": "Allow",
+            "Action": [
+                "s3:*",
+                "s3-object-lambda:*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::bucketforpawan",
+                "arn:aws:s3:::bucketforpawan/*"
+            ]
+        }
+
+    ]
+}

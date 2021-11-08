@@ -1,0 +1,522 @@
+Parameters:
+# Email Notification Parameter
+  EmailAddress:
+      Description: Email Address for sending SNS notifications for CodeCommit
+      Type: String
+      Default: pawanrai852@gmail.com
+  TagKey:
+      Type: String
+      Default: Name
+      Description: >-
+        The tag name that is associated with EC2 instances on which CodeDeploy
+        agent is installed
+  TagValue:
+      Description: The tag value that identifies this as a target for deployments.
+      Type: String
+      Default: CodeDeployEC2Tag
+      AllowedPattern: '[\x20-\x7E]*'
+      ConstraintDescription: Can contain only ASCII characters.
+#key Pair Parameter
+  EC2KeyPairName:
+      Description: >-
+        Name of an existing Amazon EC2 key pair to enable SSH access to the
+        instances.
+      Type: 'AWS::EC2::KeyPair::KeyName'
+      MinLength: '1'
+      MaxLength: '255'
+      Default: cloudFormationKeyPair
+      AllowedPattern: '[\x20-\x7E]*'
+      ConstraintDescription: Can contain only ASCII characters.
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names
+    Type: String
+# VPC ParaMeters for using inside the Resource Session for Better Understanding
+  VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.192.0.0/16
+
+  PublicSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.192.10.0/24
+
+  PublicSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
+    Type: String
+    Default: 10.192.11.0/24
+
+  PrivateSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    Default: 10.192.20.0/24
+
+  PrivateSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+    Type: String
+    Default: 10.192.21.0/24
+Metadata:
+    AWS::CloudFormation::Interface:
+      ParameterGroups:
+        - Label:
+            default: Dynamic Configuration
+          Parameters:
+            - EC2KeyPairName
+      ParameterLabels:
+        EC2KeyPairName:
+          default: EC2 KeyPair Name
+        RepositoryName:
+          default: CodeCommit Repository Name
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ1)
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway2EIP.AllocationId
+      SubnetId: !Ref PublicSubnet2
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Routes
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Routes (AZ1)
+
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Routes (AZ2)
+
+  DefaultPrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+
+  NoIngressSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+      GroupName: "no-ingress-sg"
+      GroupDescription: "Security group with no ingress rule"
+      VpcId: !Ref VPC
+
+  ArtifactStore:
+    Type: "AWS::S3::Bucket"
+    Properties: 
+      VersioningConfiguration:
+        Status: Enabled
+
+  CodeBuildRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: codebuild-service
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+            Version: 2012-10-17
+  CodePipelineRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: codepipeline-service
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - 'codestar-connections:*'
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                  - 'codecommit:GetBranch'
+                  - 'codecommit:GetCommit'
+                  - 'codecommit:UploadArchive'
+                  - 'codecommit:GetUploadArchiveStatus'
+                  - 'codecommit:CancelUploadArchive'
+                  - 'codebuild:*'
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                  - 's3:*'
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                  - 's3:PutObject'
+                Resource:
+                  - 'arn:aws:s3:::codepipeline*'
+                  - 'arn:aws:s3:::elasticbeanstalk*'
+                Effect: Allow
+              - Action:
+                  - 'codedeploy:CreateDeployment'
+                  - 'codedeploy:GetApplicationRevision'
+                  - 'codedeploy:GetDeployment'
+                  - 'codedeploy:GetDeploymentConfig'
+                  - 'codedeploy:RegisterApplicationRevision'
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                  - 'elasticbeanstalk:*'
+                  - 'ec2:*'
+                  - 'elasticloadbalancing:*'
+                  - 'autoscaling:*'
+                  - 'cloudwatch:*'
+                  - 's3:*'
+                  - 'sns:*'
+                  - 'cloudformation:*'
+                  - 'rds:*'
+                  - 'sqs:*'
+                  - 'ecs:*'
+                  - 'iam:PassRole'
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                  - 'lambda:InvokeFunction'
+                  - 'lambda:ListFunctions'
+                Resource: '*'
+                Effect: Allow
+            Version: 2012-10-17
+
+  CodeBuildJavaProject:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CodeBuildRole
+    Properties:
+      Name:
+        Ref: AWS::StackName
+      Description: Build Java application
+      ServiceRole:
+        Fn::GetAtt:
+        - CodeBuildRole
+        - Arn
+      Artifacts:
+        Type: no_artifacts
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+      Source:
+        Location: https://github.com/pawanrai852/CodeDeployRepository
+        Type: GITHUB
+      TimeoutInMinutes: 10
+      VpcConfig:
+        VpcId: !Ref VPC
+        Subnets: [!Ref PublicSubnet1]
+        SecurityGroupIds: [!Ref NoIngressSecurityGroup]
+      Tags:
+      - Key: Owner
+        Value: JavaTomcatProject
+  MySNSTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      Subscription:
+        - Endpoint: !Ref EmailAddress
+          Protocol: email
+  TestingNameCodeDeploy:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: >-
+        https://ec2bucketinindia.s3.amazonaws.com/FinalDraftForEC2CFCodePipelineV2.yml
+      TimeoutInMinutes: '60'
+      Parameters:
+        TagValue: !Ref TagValue
+        KeyPairName: !Ref EC2KeyPairName
+  TestingAppName:
+    Type: 'AWS::CodeDeploy::Application'
+    DependsOn: TestingNameCodeDeploy
+  TestingAppGroupName:
+    Type: 'AWS::CodeDeploy::DeploymentGroup'
+    DependsOn: TestingAppName
+    Properties:
+      ApplicationName: !Ref TestingAppName
+      DeploymentConfigName: CodeDeployDefault.AllAtOnce
+      Ec2TagFilters:
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+          Type: KEY_AND_VALUE
+      ServiceRoleArn: !GetAtt 
+        - TestingNameCodeDeploy
+        - Outputs.CodeDeployTrustRoleARN
+  TestingName:
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+      ArtifactStore:
+        Location: !Ref ArtifactStore
+        Type: S3
+      RoleArn: !Join 
+        - ''
+        - - 'arn:aws:iam::'
+          - !Ref 'AWS::AccountId'
+          - ':role/'
+          - !Ref CodePipelineRole
+      Stages:
+        - Name: Source
+          Actions:
+            - InputArtifacts: []
+              Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: '1'
+                Provider: CodeStarSourceConnection
+              OutputArtifacts:
+                - Name: MyApp
+              Configuration:
+                ConnectionArn: "arn:aws:codestar-connections:us-east-1:448992612150:connection/d811f751-5976-4af3-9d79-e15a763a08bd"
+                FullRepositoryId: "pawanrai852/CodeDeployRepository"
+                BranchName: "main"
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - InputArtifacts:
+                - Name: MyApp
+              Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              OutputArtifacts:
+                  - Name: MyPipeline-BuildArtifact
+              Configuration:
+                ProjectName: !Ref CodeBuildJavaProject
+              RunOrder: 1
+        - Name: Deploy
+          Actions:
+            - InputArtifacts:
+                - Name: MyPipeline-BuildArtifact
+              Name: Deploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: '1'
+                Provider: CodeDeploy
+              OutputArtifacts: []
+              Configuration:
+                ApplicationName: !Ref TestingAppName
+                DeploymentGroupName: !Ref TestingAppGroupName
+              RunOrder: 1
+      ArtifactStore:
+        Type: S3
+        Location:
+          Fn::Join:
+          - ''
+          - - codepipeline-
+            - Ref: AWS::Region
+            - "-"
+            - Ref: AWS::AccountId
+# Outputs:
+#   CodeBuildURL:
+#     Value:
+#       Fn::Join:
+#       - ''
+#       - - https://console.aws.amazon.com/codebuild/home?region=
+#         - Ref: AWS::Region
+#         - "#/projects/"
+#         - Ref: CodeBuildJavaProject
+#         - "/view"
+#     Description: CodeBuild URL
+#   CodeCommitURL:
+#     Value:
+#       Fn::Join:
+#       - ''
+#       - - https://console.aws.amazon.com/codecommit/home?region=
+#         - Ref: AWS::Region
+#         - "#/repository/"
+#         - Ref: AWS::StackName
+#         - "/browse/HEAD/--/"
+#     Description: Git Repository URL
+#   CodeDeployURL:
+#     Value:
+#       Fn::Join:
+#       - ''
+#       - - https://console.aws.amazon.com/codedeploy/home?region=
+#         - Ref: AWS::Region
+#         - "#/deployments/"
+#     Description: CodeDeploy URL
+#   CloneUrlSsh:
+#     Value:
+#       Fn::Join:
+#       - ''
+#       - - 'git clone '
+#         - Fn::GetAtt:
+#           - CodeCommitJavaRepo
+#           - CloneUrlSsh
+#         - ''
+#     Description: Git command for CodeCommit repository
+#   CodePipelineURL:
+#     Value:
+#       Fn::Join:
+#       - ''
+#       - - https://console.aws.amazon.com/codepipeline/home?region=
+#         - Ref: AWS::Region
+#         - "#/view/"
+#         - Ref: CodePipelineStack
+#     Description: CodePipeline URL
